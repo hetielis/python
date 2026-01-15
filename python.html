@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pythoni maailm🐍✨</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Roboto+Mono:wght@500&display=swap');
+
+        :root {
+            --primary: #FF00CC;
+            --secondary: #3333FF;
+            --accent: #00FFCC;
+            --dark: #1a1a2e;
+            --glass: rgba(255, 255, 255, 0.1);
+            --success: #00ff00;
+            --error: #ff3333;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Fredoka One', cursive;
+            background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        header {
+            padding: 15px 40px;
+            background: rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .level-badge {
+            background: var(--primary);
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            box-shadow: 0 0 15px var(--primary);
+            border: 2px solid white;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            padding: 30px;
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 90%;
+            height: 80vh;
+        }
+
+        /* --- EDITOR (LEFT) --- */
+        .editor-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-width: 300px;
+        }
+
+        .task-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 6px solid var(--accent);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .task-title { color: var(--accent); font-size: 1.3rem; margin-bottom: 8px; }
+        .task-text { font-family: sans-serif; line-height: 1.5; font-size: 1.1rem; }
+
+        .code-area-wrapper {
+            flex: 1;
+            position: relative;
+            background: #0d0d1a;
+            border-radius: 15px;
+            border: 2px solid #444;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        textarea {
+            width: 100%; height: 100%;
+            background: transparent; color: #00FFCC;
+            font-family: 'Roboto Mono', monospace; font-size: 22px;
+            border: none; padding: 25px; resize: none; outline: none;
+            line-height: 1.5;
+        }
+
+        textarea::placeholder {
+            color: rgba(0, 255, 204, 0.3);
+        }
+
+        .run-btn {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border: none; padding: 20px; border-radius: 15px;
+            color: white; font-family: 'Fredoka One', cursive; font-size: 1.8rem;
+            cursor: pointer; transition: 0.2s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .run-btn:hover { transform: scale(1.02); box-shadow: 0 0 25px var(--primary); }
+        .run-btn:active { transform: scale(0.98); }
+
+        /* --- PREVIEW (RIGHT) --- */
+        .preview-panel {
+            flex: 1.5;
+            background: white;
+            border-radius: 30px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 8px solid white;
+            box-shadow: 0 0 50px rgba(0,0,0,0.3);
+            transition: background 0.5s ease;
+        }
+
+        .character {
+            font-size: 150px;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            filter: drop-shadow(0 20px 20px rgba(0,0,0,0.3));
+            user-select: none;
+            z-index: 2;
+        }
+
+        .speech-bubble {
+            background: white; color: black;
+            padding: 20px 40px; border-radius: 40px;
+            position: absolute; top: 15%;
+            font-family: 'Fredoka One', cursive; font-size: 2rem;
+            opacity: 0; transform: scale(0) translateY(20px);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            z-index: 10; pointer-events: none;
+            max-width: 80%; text-align: center;
+        }
+        .speech-bubble.show { opacity: 1; transform: scale(1) translateY(0); }
+        .speech-bubble::after {
+            content: ''; position: absolute; bottom: -15px; left: 50%;
+            border-width: 15px 15px 0; border-style: solid;
+            border-color: white transparent; transform: translateX(-50%);
+        }
+
+        /* TOAST NOTIFICATION */
+        .toast {
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: white;
+            color: #333;
+            padding: 20px 50px;
+            border-radius: 50px;
+            font-size: 1.5rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000;
+            border: 6px solid #ccc;
+            text-align: center;
+        }
+        .toast.success { border-color: var(--success); color: #006400; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        .toast.error { border-color: var(--error); color: #8b0000; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+        /* ANIMATIONS */
+        @keyframes dance {
+            0% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(-20deg) scale(1.2); }
+            50% { transform: rotate(0deg) scale(1); }
+            75% { transform: rotate(20deg) scale(1.2); }
+            100% { transform: rotate(0deg) scale(1); }
+        }
+        .dancing { animation: dance 0.6s infinite; }
+
+        .confetti {
+            position: absolute; width: 12px; height: 12px;
+            background: #f00; animation: fall linear forwards; z-index: 100;
+        }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); } }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🐍 Pythoni maailm</h1>
+        <div class="level-badge" id="level-display">1. Tase</div>
+    </header>
+
+    <div class="container">
+        <div class="editor-panel">
+            <div class="task-box">
+                <div class="task-title" id="task-title">Laen...</div>
+                <div class="task-text" id="task-desc">...</div>
+            </div>
+
+            <div class="code-area-wrapper">
+                <textarea id="code-input" spellcheck="false" placeholder="# Kirjuta oma kood siia..."></textarea>
+            </div>
+
+            <button class="run-btn" onclick="runCode()">KÄIVITA KOOD</button>
+        </div>
+
+        <div class="preview-panel" id="stage">
+            <div class="speech-bubble" id="bubble">...</div>
+            <div class="character" id="hero">🤖</div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">Teade</div>
+
+    <script>
+        // --- DATA ---
+        const colorMap = {
+            'punane': '#FF4444', 'sinine': '#4444FF', 'roheline': '#44FF44', 'kollane': '#FFFF44',
+            'lilla': '#AA44FF', 'roosa': '#FF69B4', 'oranž': '#FF8800', 'oranz': '#FF8800',
+            'must': '#111111', 'valge': '#FFFFFF', 'hall': '#888888', 'pruun': '#8B4513',
+            'helesinine': '#87CEEB', 'tumesinine': '#00008B', 'kuldne': '#FFD700', 'hõbedane': '#C0C0C0',
+            'laim': '#00FF00', 'laimiroheline': '#32CD32', 'korall': '#FF7F50', 'türkiis': '#40E0D0',
+            'indigo': '#4B0082', 'violetne': '#EE82EE', 'beež': '#F5F5DC', 'khaki': '#F0E68C',
+            'oliiv': '#808000', 'lõhe': '#FA8072', 'taevasinine': '#87CEEB', 'navy': '#000080',
+            'piparmünt': '#98FF98'
+        };
+
+        const animalMap = {
+            'kass': '🐱', 'koer': '🐶', 'draakon': '🐲', 'kummitus': '👻', 'robot': '🤖',
+            'ükssarvik': '🦄', 'tiiger': '🐯', 'lõvi': '🦁', 'panda': '🐼', 'karu': '🐻',
+            'dino': '🦖', 'dinosaurus': '🦖', 'konn': '🐸', 'ahv': '🐵', 'siga': '🐷',
+            'hiir': '🐭', 'jänes': '🐰', 'rebane': '🦊', 'hunt': '🐺', 'öökull': '🦉',
+            'kana': '🐔', 'tibu': '🐤', 'kala': '🐠', 'kaheksajalg': '🐙', 'ämblik': '🕷️',
+            'liblikas': '🦋', 'tulnukas': '👽', 'lammas': '🐑', 'ingel': '👼', 'politsei': '👮', 'ninja': '🥷'
+        };
+
+        const levels = [
+            {
+                id: 1,
+                title: "1. Tase: Esimene Sõna",
+                desc: "Meie robot ei oska veel rääkida. Õpeta talle, kuidas!<br>Kirjuta kasti sisse: <br><code>print(\"Tere!\")</code>",
+                check: (state) => state.hasPrint,
+                errorMsg: "Robot on vait... Kontrolli käsk üle?"
+            },
+            {
+                id: 2,
+                title: "2. Tase: Värvimine",
+                desc: "Valge tuba on igav. Värvi see ära!<br>Kirjuta: <code>taust = \"punane\"</code><br>(Võid proovida ka: sinine, roheline, kollane, lilla...)",
+                check: (state) => state.bgChanged,
+                errorMsg: "Taust on ikka valge! Kasuta: taust = \"värv\""
+            },
+            {
+                id: 3,
+                title: "3. Tase: Muutumismäng",
+                desc: "Robot tahab olla keegi teine. Muuda ta kassiks, koeraks või draakoniks!<br>Kirjuta: <code>loom = \"draakon\"</code>",
+                check: (state) => state.charChanged,
+                errorMsg: "Robot on ikka robot! Proovi: loom = \"kass\""
+            },
+            {
+                id: 4,
+                title: "4. Tase: SUUR või väike",
+                desc: "Tee oma tegelane SUUREKS (suuremaks kui 150).<br>Kirjuta: <code>suurus = 200</code>",
+                check: (state) => state.size > 150,
+                errorMsg: "Liiga väike! Number peab olema suurem kui 150."
+            },
+            {
+                id: 5,
+                title: "5. Tase: Disko!",
+                desc: "Aeg pidutseda! Pane tegelane tantsima.<br>Kirjuta: <code>tantsi()</code>",
+                check: (state) => state.isDancing,
+                errorMsg: "Keegi ei tantsi. Ära unusta sulgusid: tantsi()"
+            }
+        ];
+
+        let currentLevelIndex = 0;
+        const stage = document.getElementById('stage');
+        const hero = document.getElementById('hero');
+        const bubble = document.getElementById('bubble');
+        const codeInput = document.getElementById('code-input');
+        const toast = document.getElementById('toast');
+
+        // --- CORE FUNCTIONS ---
+
+        function runCode() {
+            const rawCode = codeInput.value;
+            const lines = rawCode.toLowerCase().split('\n');
+
+            // State for this execution
+            let state = {
+                hasPrint: false,
+                bgChanged: false,
+                charChanged: false,
+                size: 100, // default px
+                isDancing: false
+            };
+
+            // Reset visuals slightly
+            hero.classList.remove('dancing');
+            bubble.classList.remove('show');
+
+            // --- PARSER ---
+            lines.forEach(line => {
+                line = line.trim();
+
+                // 1. PRINT: print("tekst")
+                const printMatch = line.match(/^print\s*\(\s*['"](.+)['"]\s*\)/);
+                if (printMatch) {
+                    showBubble(printMatch[1]);
+                    state.hasPrint = true;
+                }
+
+                // 2. TAUST: taust = "värv"
+                const bgMatch = line.match(/^taust\s*=\s*['"](.+)['"]/);
+                if (bgMatch) {
+                    const colorInput = bgMatch[1];
+                    if (colorMap[colorInput]) {
+                        stage.style.background = colorMap[colorInput];
+                    } else {
+                        stage.style.background = colorInput;
+                    }
+                    state.bgChanged = true;
+                }
+
+                // 3. LOOM: loom = "loom"
+                const animalMatch = line.match(/^loom\s*=\s*['"](.+)['"]/);
+                if (animalMatch) {
+                    const animalInput = animalMatch[1];
+                    if (animalMap[animalInput]) {
+                        hero.innerText = animalMap[animalInput];
+                        state.charChanged = true;
+                    }
+                }
+
+                // 4. SUURUS: suurus = number
+                const sizeMatch = line.match(/^suurus\s*=\s*(\d+)/);
+                if (sizeMatch) {
+                    let newSize = parseInt(sizeMatch[1]);
+                    if(newSize > 400) newSize = 400;
+                    if(newSize < 10) newSize = 10;
+                    hero.style.fontSize = newSize + "px";
+                    state.size = newSize;
+                }
+
+                // 5. TANTSI: tantsi()
+                if (line.includes('tantsi()')) {
+                    hero.classList.add('dancing');
+                    state.isDancing = true;
+                }
+            });
+
+            // --- LEVEL VALIDATION ---
+            checkLevelProgress(state);
+        }
+
+        function checkLevelProgress(state) {
+            // --- SIIN ON MUUDATUS ---
+            // Kui mäng on läbi (kõik 5 taset tehtud), siis ei tee enam midagi.
+            if (currentLevelIndex >= levels.length) {
+                return; // Lihtsalt välju funktsioonist, ära näita vigu ega edu.
+            }
+
+            const currentLvl = levels[currentLevelIndex];
+
+            if (currentLvl.check(state)) {
+                // SUCCESS
+                showToast("Õige! Tase läbitud! 🎉", true);
+                createConfetti();
+
+                // Wait 2s then next level
+                setTimeout(() => {
+                    currentLevelIndex++;
+                    loadLevel();
+                }, 2000);
+
+            } else {
+                // FAIL
+                showToast("❌ " + currentLvl.errorMsg, false);
+                // Shake effect on editor
+                document.querySelector('.editor-panel').style.transform = "translateX(5px)";
+                setTimeout(()=> document.querySelector('.editor-panel').style.transform = "translateX(0)", 100);
+            }
+        }
+
+        function loadLevel() {
+            if (currentLevelIndex < levels.length) {
+                const lvl = levels[currentLevelIndex];
+                document.getElementById('level-display').innerText = lvl.id + ". Tase";
+                document.getElementById('task-title').innerText = " " + lvl.title;
+                document.getElementById('task-desc').innerHTML = lvl.desc;
+            } else {
+                // END GAME STATE
+                document.getElementById('level-display').innerText = "Oled meister";
+                document.getElementById('task-title').innerText = "🏆 Mäng Läbitud!";
+                document.getElementById('task-desc').innerHTML = "Sa oskad kõike! Mängi nüüd vabalt – katseta värve, loomi ja suurusi.";
+                createConfetti();
+                createConfetti();
+            }
+        }
+
+        // --- HELPER UI ---
+
+        function showBubble(text) {
+            bubble.innerText = text;
+            bubble.classList.add('show');
+            setTimeout(() => bubble.classList.remove('show'), 3000);
+        }
+
+        function showToast(msg, isSuccess) {
+            toast.innerText = msg;
+            toast.className = "toast";
+            toast.classList.add(isSuccess ? "success" : "error");
+            setTimeout(() => {
+                toast.classList.remove("success", "error");
+            }, 3000);
+        }
+
+        function createConfetti() {
+            for(let i=0; i<60; i++) {
+                const conf = document.createElement('div');
+                conf.classList.add('confetti');
+                conf.style.left = Math.random() * 100 + '%';
+                conf.style.top = -10 + 'px';
+                conf.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                conf.style.animationDuration = Math.random() * 2 + 1 + 's';
+                document.body.appendChild(conf);
+                setTimeout(() => conf.remove(), 3000);
+            }
+        }
+
+        // Start
+        loadLevel();
+
+    </script>
+</body>
+</html>
