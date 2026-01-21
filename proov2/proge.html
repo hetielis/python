@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+    <meta charset="UTF-8">
+    <title>Veebilehe kood</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #1e1e1e;
+        }
+
+        /* Vasak pool - Kood */
+        .editor-side {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            border-right: 2px solid #333;
+        }
+
+        label { color: #888; margin-bottom: 10px; font-weight: bold; }
+
+        textarea {
+            flex: 1;
+            background-color: #252526;
+            color: #ce9178; /* Oranžikas tekst nagu päris koodis */
+            border: 1px solid #444;
+            border-radius: 5px;
+            padding: 20px;
+            font-size: 18px;
+            font-family: 'Courier New', monospace;
+            resize: none;
+            outline: none;
+            selection-background: #264f78;
+        }
+
+        /* Parem pool - Vaade */
+        .preview-side {
+            flex: 1;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+        }
+
+        iframe {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: white;
+        }
+
+        .hint {
+            background: #333;
+            color: #00ff00;
+            padding: 5px 10px;
+            font-size: 13px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="editor-side">
+        <label>VEEBILEHE KOOD:</label>
+        <textarea id="editor" oninput="update()" spellcheck="false">
+<body style="text-align: center; font-family: sans-serif;">
+
+  <h1 style="color: coral;">Minu veebileht</h1>
+
+  <p>Tere! Mina olen väike leht.</p>
+
+  <div style="font-size: 60px;">🐼</div>
+
+  <p>KLIKI MIND</p>
+
+  <img src="https://placedog.net/300/200" width="200">
+
+</body></textarea>
+        <div class="hint">Kliki paremal asju, et näha kus nad koodis on!</div>
+    </div>
+
+    <div class="preview-side">
+        <label style="color: #333;">SINU VEEBILEHT:</label>
+        <iframe id="preview"></iframe>
+    </div>
+
+<script>
+    const editor = document.getElementById('editor');
+    const preview = document.getElementById('preview');
+
+    function update() {
+        const content = editor.value;
+        const iframeDoc = preview.contentWindow.document;
+
+        iframeDoc.open();
+        iframeDoc.write(content);
+
+        // Lisame eelvaate sisse väikse "kuulaja"
+        iframeDoc.write(`
+            <script>
+                document.body.onclick = function(e) {
+                    if (e.target !== document.body) {
+                        // Saada märguanne emale (pealehele), mida klikiti
+                        window.parent.postMessage({
+                            text: e.target.innerText || e.target.outerHTML,
+                            tagName: e.target.tagName
+                        }, "*");
+                    }
+                };
+            <\/script>
+        `);
+        iframeDoc.close();
+    }
+
+    // See osa leiab teksti koodist üles ja märgistab selle
+    window.addEventListener('message', function(event) {
+        const clickedText = event.data.text.trim();
+        const code = editor.value;
+
+        // Leiame teksti asukoha
+        const index = code.indexOf(clickedText);
+
+        if (index !== -1) {
+            editor.focus();
+            editor.setSelectionRange(index, index + clickedText.length);
+
+            // Kerime koodi õigesse kohta, kui see on pikk
+            const lineHeight = 24;
+            const lines = code.substr(0, index).split("\n").length;
+            editor.scrollTop = (lines - 1) * lineHeight;
+        }
+    });
+
+    // Käivita kohe
+    window.onload = update;
+</script>
+
+</body>
+</html>
