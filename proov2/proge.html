@@ -2,91 +2,80 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>Veebilehe kood</title>
+    <title>Väike Veebimeister</title>
     <style>
         body {
-            margin: 0;
-            padding: 0;
-            display: flex;
-            height: 100vh;
-            font-family: 'Segoe UI', sans-serif;
-            background-color: #1e1e1e;
+            margin: 0; padding: 0; display: flex; height: 100vh;
+            font-family: 'Comic Sans MS', sans-serif; background-color: #f4f4f4;
+            overflow: hidden; flex-direction: column;
         }
 
-        /* Vasak pool - Kood */
-        .editor-side {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 15px;
-            border-right: 2px solid #333;
+        /* Ülemine tööriistariba */
+        .toolbar {
+            background: #fff; padding: 10px 20px;
+            display: flex; align-items: center; gap: 15px;
+            border-bottom: 2px solid #ddd;
         }
 
-        label { color: #888; margin-bottom: 10px; font-weight: bold; }
+        .color-picker-label { font-weight: bold; color: #555; }
+        input[type="color"] { cursor: pointer; border: none; width: 40px; height: 40px; border-radius: 50%; }
+
+        /* Põhiala */
+        .main-view { display: flex; flex: 1; overflow: hidden; }
+
+        .editor-side, .preview-side {
+            flex: 1; display: flex; flex-direction: column; padding: 15px;
+        }
+
+        label { color: #888; margin-bottom: 5px; font-size: 14px; text-transform: uppercase; }
 
         textarea {
-            flex: 1;
-            background-color: #252526;
-            color: #ce9178; /* Oranžikas tekst nagu päris koodis */
-            border: 1px solid #444;
-            border-radius: 5px;
-            padding: 20px;
-            font-size: 18px;
-            font-family: 'Courier New', monospace;
-            resize: none;
-            outline: none;
-            selection-background: #264f78;
-        }
-
-        /* Parem pool - Vaade */
-        .preview-side {
-            flex: 1;
-            background-color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            padding: 15px;
+            flex: 1; background-color: #282c34; color: #98c379;
+            border-radius: 10px; padding: 20px; font-size: 18px;
+            font-family: 'Courier New', monospace; resize: none; outline: none;
+            line-height: 1.5; border: 5px solid #3e4451;
         }
 
         iframe {
-            flex: 1;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background-color: white;
+            flex: 1; border: 5px solid #fff; border-radius: 10px;
+            background-color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
 
-        .hint {
-            background: #333;
-            color: #00ff00;
-            padding: 5px 10px;
-            font-size: 13px;
-            text-align: center;
-        }
+        .highlight-msg { font-size: 12px; color: #aaa; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-    <div class="editor-side">
-        <label>VEEBILEHE KOOD:</label>
-        <textarea id="editor" oninput="update()" spellcheck="false">
-<body style="text-align: center; font-family: sans-serif;">
-
-  <h1 style="color: coral;">Minu veebileht</h1>
-
-  <p>Tere! Mina olen väike leht.</p>
-
-  <div style="font-size: 60px;">🐼</div>
-
-  <p>KLIKI MIND</p>
-
-  <img src="https://placedog.net/300/200" width="200">
-
-</body></textarea>
-        <div class="hint">Kliki paremal asju, et näha kus nad koodis on!</div>
+    <div class="toolbar">
+        <span class="color-picker-label">🎨 Vali taustavärv:</span>
+        <input type="color" id="bgColorPicker" value="#add8e6" oninput="changeBg(this.value)">
+        <span style="color: #888; font-size: 14px;"></span>
     </div>
 
-    <div class="preview-side">
-        <label style="color: #333;">SINU VEEBILEHT:</label>
-        <iframe id="preview"></iframe>
+    <div class="main-view">
+        <div class="editor-side">
+            <label>Sinu kood:</label>
+            <textarea id="editor" oninput="update()" spellcheck="false">
+<body style="background-color: #add8e6; text-align: center;">
+
+  <h1 style="color: #2c3e50;">Olen imeline leht</h1>
+
+  <p>Tere! Mina olen väike veebileht.</p>
+
+  <p>Siin on minu koer:</p>
+
+  <img src="https://placedog.net/400/300" width="250">
+
+  <p>Veel juttu:)</p>
+
+</body></textarea>
+            <div class="highlight-msg">Nipp: kliki paremal asju, et need koodist leida!</div>
+        </div>
+
+        <div class="preview-side">
+            <label>Sinu veebileht:</label>
+            <iframe id="preview"></iframe>
+        </div>
     </div>
 
 <script>
@@ -100,16 +89,18 @@
         iframeDoc.open();
         iframeDoc.write(content);
 
-        // Lisame eelvaate sisse väikse "kuulaja"
+        // Skript, mis saadab info klikitud elemendi kohta
         iframeDoc.write(`
             <script>
                 document.body.onclick = function(e) {
                     if (e.target !== document.body) {
-                        // Saada märguanne emale (pealehele), mida klikiti
-                        window.parent.postMessage({
-                            text: e.target.innerText || e.target.outerHTML,
-                            tagName: e.target.tagName
-                        }, "*");
+                        let info = {
+                            text: e.target.innerText,
+                            html: e.target.outerHTML,
+                            tagName: e.target.tagName,
+                            src: e.target.src
+                        };
+                        window.parent.postMessage(info, "*");
                     }
                 };
             <\/script>
@@ -117,26 +108,47 @@
         iframeDoc.close();
     }
 
-    // See osa leiab teksti koodist üles ja märgistab selle
+    // Taustavärvi muutmine koodis
+    function changeBg(color) {
+        let code = editor.value;
+        // Otsime üles background-color osa ja asendame selle
+        const newCode = code.replace(/background-color: #[a-fA-F0-9]{6}|background-color: [a-z]+/, `background-color: ${color}`);
+        editor.value = newCode;
+        update();
+    }
+
+    // Klikkimise tuvastamine
     window.addEventListener('message', function(event) {
-        const clickedText = event.data.text.trim();
+        const data = event.data;
         const code = editor.value;
+        let searchString = "";
 
-        // Leiame teksti asukoha
-        const index = code.indexOf(clickedText);
+        if (data.tagName === "IMG") {
+            // Kui on pilt, otsime ainult src sisu (aadressi)
+            // Võtame pildi aadressi lõpuosa, et otsing oleks täpsem
+            const url = new URL(data.src);
+            searchString = url.pathname.substring(url.pathname.lastIndexOf('/') + 1);
 
-        if (index !== -1) {
-            editor.focus();
-            editor.setSelectionRange(index, index + clickedText.length);
-
-            // Kerime koodi õigesse kohta, kui see on pikk
-            const lineHeight = 24;
-            const lines = code.substr(0, index).split("\n").length;
-            editor.scrollTop = (lines - 1) * lineHeight;
+            // Otsime koodist üles pildi nime
+            const index = code.indexOf(searchString);
+            if (index !== -1) {
+                editor.focus();
+                // Märgime ära kogu src jutumärkide vahel
+                const start = code.lastIndexOf('"', index);
+                const end = code.indexOf('"', index);
+                editor.setSelectionRange(start + 1, end);
+            }
+        } else {
+            // Kui on tekst, märgime teksti
+            searchString = data.text.trim();
+            const index = code.indexOf(searchString);
+            if (index !== -1) {
+                editor.focus();
+                editor.setSelectionRange(index, index + searchString.length);
+            }
         }
     });
 
-    // Käivita kohe
     window.onload = update;
 </script>
 
