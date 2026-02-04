@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI või Päris? – Mäng</title>
+    <style>
+        :root {
+            --must: #0b0b0b;
+            --roosa: #ff007f;
+            --roheline: #39ff14;
+            --tekst: #ffffff;
+        }
+
+        body {
+            background-color: var(--must);
+            color: var(--tekst);
+            font-family: 'Orbitron', 'Segoe UI', sans-serif; /* Küberpungi stiilis font */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--roosa);
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            text-shadow: 0 0 15px var(--roosa);
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            border: 2px solid var(--roheline);
+            padding: 15px;
+            border-radius: 10px;
+            background: rgba(57, 255, 20, 0.05);
+            box-shadow: inset 0 0 10px rgba(57, 255, 20, 0.2);
+        }
+
+        .correct { color: var(--roheline); text-shadow: 0 0 5px var(--roheline); }
+        .wrong { color: var(--roosa); text-shadow: 0 0 5px var(--roosa); }
+
+        /* Mänguaken */
+        #game-screen {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            background: #111;
+            border: 3px solid var(--roosa);
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 30px rgba(255, 0, 127, 0.3);
+        }
+
+        #display-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Nii ei venita pilti välja */
+        }
+
+        /* Suur tagasiside kast */
+        #feedback-overlay {
+            display: none;
+            width: 100%;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+
+        .feedback-title {
+            font-size: 3rem;
+            font-weight: 900;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .explanation {
+            font-size: 1.3rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            color: #ccc;
+        }
+
+        /* Nupud */
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 18px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: none;
+            border-radius: 50px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-ai {
+            background-color: var(--roosa);
+            color: white;
+            box-shadow: 0 0 20px rgba(255, 0, 127, 0.5);
+        }
+
+        .btn-real {
+            background-color: var(--roheline);
+            color: var(--must);
+            box-shadow: 0 0 20px rgba(57, 255, 20, 0.5);
+        }
+
+        .btn-next {
+            background-color: var(--tekst);
+            color: var(--must);
+        }
+
+        button:hover {
+            transform: scale(1.1);
+            filter: brightness(1.2);
+        }
+
+        /* Peidame elemendid, mida pole vaja näha */
+        .hidden { display: none !important; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>AI vs PÄRIS</h1>
+
+    <div class="scoreboard">
+        <div>ÕIGE: <span id="correct-count" class="correct">0</span></div>
+        <div>VALE: <span id="wrong-count" class="wrong">0</span></div>
+        <div>PILT: <span id="current-step">1</span> / 10</div>
+    </div>
+
+    <div id="game-screen">
+        <img id="display-image" src="" alt="">
+
+        <div id="feedback-overlay">
+            <div id="feedback-status" class="feedback-title"></div>
+            <p id="explanation-text" class="explanation"></p>
+            <button class="btn-next" onclick="nextImage()">Järgmine pilt →</button>
+        </div>
+    </div>
+
+    <div class="controls" id="action-buttons">
+        <button class="btn-ai" onclick="checkAnswer(true)">AI pilt</button>
+        <button class="btn-real" onclick="checkAnswer(false)">Päris pilt</button>
+    </div>
+</div>
+
+<script>
+    // 1. SINU 10 PILTI
+    const gameData = [
+        { url: "aicateiffel.png", isAI: true, explanation: "Kas on üldse küsimust?" },
+        { url: "realsky.png", isAI: false, explanation: "See on päris pilt. Taevas juhtus olema ilus ja Stenbocki maja on ka äratuntav." },
+        { url: "aieiffel.png", isAI: true, explanation: "Inimesed on samade riietega, pargis pole restorani, seega kust lauad tulid?" },
+        { url: "realeiffel.png", isAI: false, explanation: "Päris pilt. Ei jäta perfektset muljet, torn on viltu." },
+        { url: "aicat.png", isAI: true, explanation: "AI reedavad kassi vurrud ja liiga sümmeetriline nägu." },
+
+        { url: "vanalinn.png", isAI: true, explanation: "Pildil on hooned üksteise otsas." },
+        { url: "realcat.png", isAI: false, explanation: "See on täitsa päris, ühe kõrvaga ja puha." },
+
+        { url: "airaamat.png", isAI: true, explanation: "Raamatu tekst on vigu täis." },
+        { url: "mc.png", isAI: true, explanation: "Puud on vale värvi, küla majal on kivikatus." },
+        { url: "aivalgus.png", isAI: true, explanation: "Kui pilt on üle valgustatud võib olla tegemist AI-ga" }
+    ];
+
+    let currentIndex = 0;
+    let correctScore = 0;
+    let wrongScore = 0;
+
+    const imgElement = document.getElementById('display-image');
+    const feedbackOverlay = document.getElementById('feedback-overlay');
+    const statusText = document.getElementById('feedback-status');
+    const explanationText = document.getElementById('explanation-text');
+    const actionButtons = document.getElementById('action-buttons');
+
+    // Mängu käivitamine
+    window.onload = function() {
+        showCurrentImage();
+    };
+
+    function showCurrentImage() {
+        imgElement.src = gameData[currentIndex].url;
+        imgElement.classList.remove('hidden');
+        feedbackOverlay.style.display = 'none';
+        actionButtons.classList.remove('hidden');
+    }
+
+    function checkAnswer(userGuessedAI) {
+        const currentData = gameData[currentIndex];
+        const isCorrect = userGuessedAI === currentData.isAI;
+
+        if (isCorrect) {
+            correctScore++;
+            document.getElementById('correct-count').innerText = correctScore;
+            statusText.innerText = "ÕIGE!";
+            statusText.style.color = "var(--roheline)";
+        } else {
+            wrongScore++;
+            document.getElementById('wrong-count').innerText = wrongScore;
+            statusText.innerText = "VALE!";
+            statusText.style.color = "var(--roosa)";
+        }
+
+        // Kuva tagasiside ja peida pilt/nupud
+        explanationText.innerText = currentData.explanation;
+        imgElement.classList.add('hidden');
+        actionButtons.classList.add('hidden');
+        feedbackOverlay.style.display = 'block';
+    }
+
+    function nextImage() {
+        currentIndex++;
+
+        if (currentIndex < gameData.length) {
+            document.getElementById('current-step').innerText = currentIndex + 1;
+            showCurrentImage();
+        } else {
+            // Mängu lõpp
+            feedbackOverlay.innerHTML = `
+                <div class="feedback-title" style="color: var(--roheline)">LÕPP!</div>
+                <p class="explanation">Skoor: ${correctScore} / 10</p>
+                <button class="btn-ai" onclick="location.reload()">Proovi uuesti</button>
+            `;
+        }
+    }
+</script>
+
+</body>
+</html>
