@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TERMINAL: PEASERVER_V7</title>
+    <style>
+        :root {
+            --glow-color: #00ff41;
+            --bg-color: #020502;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--glow-color);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            text-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
+        }
+
+        /* CRT värelus */
+        body::after {
+            content: " ";
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+            z-index: 100;
+            background-size: 100% 3px, 3px 100%;
+            pointer-events: none;
+        }
+
+        #terminal-output {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            scrollbar-width: none;
+        }
+        #terminal-output::-webkit-scrollbar { display: none; }
+
+        .line { margin: 5px 0; line-height: 1.4; white-space: pre-wrap; }
+        .system { color: #00ffff; }
+        .error { color: #ff3333; font-weight: bold; }
+        .guide { color: #ff00ff; background: rgba(255, 0, 255, 0.1); padding: 5px; border-radius: 4px; display: inline-block; margin: 10px 0; }
+        .cmd-text { color: #ffffff; font-weight: bold; }
+        .matrix-code { color: #00ff41; font-size: 0.8rem; opacity: 0.6; line-height: 1; }
+
+        #input-area {
+            display: flex;
+            align-items: center;
+            border-top: 1px solid rgba(0, 255, 65, 0.3);
+            padding-top: 15px;
+        }
+
+        #prompt { margin-right: 10px; white-space: nowrap; }
+        #user-input {
+            background: transparent; border: none; color: var(--glow-color);
+            font-family: inherit; font-size: 1.2rem; outline: none; width: 100%;
+        }
+
+        #grid-container {
+            display: none;
+            grid-template-columns: repeat(10, 35px);
+            gap: 5px;
+            margin: 15px 0;
+            justify-content: center;
+        }
+        .letter {
+            width: 35px; height: 35px; border: 1px solid #004400;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-weight: bold; font-size: 1.2rem;
+        }
+        .letter:hover { background: rgba(0, 255, 65, 0.2); }
+        .letter.found { background: var(--glow-color); color: black; box-shadow: 0 0 15px var(--glow-color); }
+
+        .code-box {
+            background: #0a0a0a;
+            border-left: 4px solid #ffff00;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: 'Consolas', monospace;
+            color: #d1d1d1;
+        }
+
+        #victory-screen {
+            display: none; position: fixed;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: black; border: 4px solid gold; padding: 40px; text-align: center;
+            z-index: 1000; box-shadow: 0 0 100px gold;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="terminal-output">
+        <div class="line error">!!! SÜSTEEM ON LUKUS: JUURDEPÄÄS PIIRATUD !!!</div>
+        <div class="line">Agent, peame sisenema peaserverisse, et andmed kätte saada.</div>
+        <br>
+        <div class="line guide">ÜLESANNE 1: Murra serverisse. Trüki käsk: <b class="cmd-text">hack server</b></div>
+    </div>
+
+    <div id="input-area">
+        <span id="prompt">AGENT@UNKNOWN:~$</span>
+        <input type="text" id="user-input" autofocus autocomplete="off">
+    </div>
+
+    <div id="grid-container"></div>
+
+    <div id="victory-screen">
+        <h1 style="color: gold; font-size: 3rem; margin-bottom: 0;">MISSIOON ÕNNESTUS</h1>
+        <p style="color: white; font-size: 1.4rem;">OLED NÜÜD SÜSTEEMI ADMIN.</p>
+        <p style="color: #00ff41;">Kõik andmed on sinu käes. Suurepärane töö!</p>
+    </div>
+
+    <script>
+        const output = document.getElementById('terminal-output');
+        const userInput = document.getElementById('user-input');
+        const promptText = document.getElementById('prompt');
+        const victory = document.getElementById('victory-screen');
+        const grid = document.getElementById('grid-container');
+
+        let step = "start";
+
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const cmd = userInput.value.trim().toLowerCase();
+                if (cmd) {
+                    addLog(`> ${cmd}`, "cmd-text");
+                    handleCommand(cmd);
+                }
+                userInput.value = '';
+                output.scrollTop = output.scrollHeight;
+            }
+        });
+
+        function addLog(text, className = "") {
+            const div = document.createElement('div');
+            div.className = "line " + className;
+            div.innerHTML = text;
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function handleCommand(cmd) {
+            // STEP 1: HACK SERVER
+            if (step === "start") {
+                if (cmd === "hack server") {
+                    startWordSearch();
+                } else {
+                    addLog("Viga! Serverisse sisenemiseks trüki: hack server", "error");
+                }
+            }
+            // STEP 2: BINARY LOGIC
+            else if (step === "binary") {
+                if (cmd === "off" || cmd === "väljas") {
+                    addLog("KONTROLL... [OK]", "system");
+                    addLog("Ühendan koodijupid...");
+                    step = "strings";
+                    addLog("<br>ÜLESANNE 3: Ühenda kaks koodi osa üheks parooliks.", "system");
+                    addLog("<div class='code-box'>osa1 = \"SUPER\"<br>osa2 = \"HÄKKER\"<br>parool = osa1 + osa2</div>", "");
+                    addLog("Mis on parooli tulemus? (Kirjuta sõnad kokku)", "guide");
+                } else {
+                    addLog("VALE VASTUS! Vihje: Kui 1 tähendab SEES, siis mida tähendab 0?", "error");
+                }
+            }
+            // STEP 3: STRING CONCATENATION
+            else if (step === "strings") {
+                if (cmd === "superhäkker" || cmd === "superhakker") {
+                    addLog("PAROOLI ÜHENDAMINE... [ÕNNESTUS]", "system");
+                    addLog("Sisenen süsteemi südamikku...");
+                    promptText.innerText = "ADMIN@SERVER_CORE:~$";
+                    step = "fibonacci";
+                    addLog("<br>ÜLESANNE 4: Leia järgmine koodinumber:", "system");
+                    addLog("<b style='color:white; font-size:1.5rem;'>1, 1, 2, 3, 5, 8, 13, ...</b>", "system");
+                    addLog("Mis on järgmine number? (Vihje: liida kaks viimast kokku)", "guide");
+                } else {
+                    addLog("VALE VASTUS! Pane need kaks sõna ilma tühikuta kokku.", "error");
+                }
+            }
+            // STEP 4: FIBONACCI
+            else if (step === "fibonacci") {
+                if (cmd === "21") {
+                    addLog("LOGIIKA KONTROLL... [LÄBITUD]", "system");
+                    step = "variables";
+                    addLog("<br>ÜLESANNE 5: Viimane turvakiht. Arvuta kood:", "system");
+                    addLog("<div class='code-box'>X = 100<br>Y = 40<br>VASTUS = X - Y</div>", "");
+                    addLog("Mis on VASTUS?", "guide");
+                } else {
+                    addLog("VALE ARVUTUS! Vihje: 8 + 13 = ?", "error");
+                }
+            }
+            // STEP 5: FINAL MATH
+            else if (step === "variables") {
+                if (cmd === "60") {
+                    addLog("TURVAKOOD ÕIGE!", "system");
+                    addLog("Kõik tõkked on maas. Alustan lõplikku andmete hõivamist...");
+                    setTimeout(startLongHackEffect, 1000);
+                } else {
+                    addLog("VALE VASTUS! Arvuta: 100 miinus 40.", "error");
+                }
+            }
+        }
+
+        // ÜLESANNE 1: Sõnarägastik (LANIMRET)
+        function startWordSearch() {
+            grid.style.display = 'grid';
+            grid.innerHTML = '';
+            output.appendChild(grid);
+            const word = "LANIMRET";
+            let found = 0;
+            const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+            for (let i = 0; i < 60; i++) {
+                const s = document.createElement('div');
+                s.className = 'letter';
+
+                // Paneme sõna täpselt keskele (3. rida, indeks 21)
+                if (i >= 21 && i < 21 + word.length) {
+                    s.innerText = word[i-21];
+                    s.onclick = function() {
+                        if (!this.classList.contains('found')) {
+                            this.classList.add('found');
+                            found++;
+                            if (found === word.length) {
+                                grid.style.display = 'none';
+                                step = "binary";
+                                addLog("MUUKIMINE ÕNNESTUS!", "system");
+                                addLog("<br>ÜLESANNE 2: Binaarne loogika (1 ja 0).", "system");
+                                addLog("<div class='code-box'>KUI LÜLITI == 1 SIIS VALGUS = \"SEES\"<br>KUI LÜLITI == 0 SIIS VALGUS = ???</div>", "");
+                                addLog("Kui number on 0, siis kas tuli on SEES või VÄLJAS?", "guide");
+                            }
+                        }
+                    };
+                } else {
+                    s.innerText = letters[Math.floor(Math.random() * letters.length)];
+                }
+                grid.appendChild(s);
+            }
+            addLog("Otsi rägastikust kood <b style='color:yellow'>TERMINL</b> ja kliki tähtedele!", "guide");
+        }
+
+        // FINAAL: Ülipikk häkkimise efekt
+        function startLongHackEffect() {
+            userInput.disabled = true;
+            let lines = 0;
+            const maxLines = 650;
+
+            const hackLoop = setInterval(() => {
+                const symbols = "ABCDEF0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
+                let codePart = "";
+                for(let i=0; i<60; i++) codePart += symbols[Math.floor(Math.random()*symbols.length)];
+
+                const texts = [
+                    "DOWNLOADING_DATABASE...", "BYPASSING_FIREWALL...", "DECRYPTING_ADMIN_HASH...",
+                    "CLEANING_LOG_FILES...", "UPLOADING_BACKDOOR...", "ACCESSING_MAINFRAME...",
+                    "ESTABLISHING_VPN...", "STEALING_ENCRYPTION_KEYS...", "CONNECTED_TO_ROOT..."
+                ];
+                const text = texts[Math.floor(Math.random()*texts.length)];
+
+                addLog(`[0x${codePart.substring(0,10)}] ${text} -- OK`, "matrix-code");
+                output.scrollTop = output.scrollHeight;
+
+                lines++;
+                if (lines > maxLines) {
+                    clearInterval(hackLoop);
+                    victory.style.display = 'block';
+                }
+            }, 8);
+        }
+    </script>
+</body>
+</html>
