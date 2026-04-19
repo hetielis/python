@@ -6,8 +6,10 @@
     <title>TERMINAL: PEASERVER_V7</title>
     <style>
         :root {
-            --glow-color: #00ff41;
+            --glow-color: #00ff41; /* Roheline (Ülesanne) */
             --bg-color: #020502;
+            --desc-color: #00ffff; /* Sinine (Kirjeldus) */
+            --comment-color: #ff00ff; /* Lilla (Kommentaarid/Juhised) */
         }
 
         body {
@@ -23,7 +25,6 @@
             text-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
         }
 
-        /* CRT värelus */
         body::after {
             content: " ";
             position: absolute;
@@ -44,9 +45,13 @@
         #terminal-output::-webkit-scrollbar { display: none; }
 
         .line { margin: 5px 0; line-height: 1.4; white-space: pre-wrap; }
-        .system { color: #00ffff; }
+
+        /* VÄRVID VASTAVALT SOOVILE */
+        .system { color: var(--desc-color); } /* Kirjeldused: Sinine */
+        .task { color: var(--glow-color); font-weight: bold; } /* Ülesanne: Roheline */
+        .guide { color: var(--comment-color); background: rgba(255, 0, 255, 0.05); padding: 2px 5px; } /* Kommentaarid: Lilla */
+
         .error { color: #ff3333; font-weight: bold; }
-        .guide { color: #ff00ff; background: rgba(255, 0, 255, 0.1); padding: 5px; border-radius: 4px; display: inline-block; margin: 10px 0; }
         .cmd-text { color: #ffffff; font-weight: bold; }
         .matrix-code { color: #00ff41; font-size: 0.8rem; opacity: 0.6; line-height: 1; }
 
@@ -80,7 +85,7 @@
 
         .code-box {
             background: #0a0a0a;
-            border-left: 4px solid #ffff00;
+            border-left: 4px solid var(--desc-color);
             padding: 10px;
             margin: 10px 0;
             font-family: 'Consolas', monospace;
@@ -99,9 +104,10 @@
 
     <div id="terminal-output">
         <div class="line error">!!! SÜSTEEM ON LUKUS: JUURDEPÄÄS PIIRATUD !!!</div>
-        <div class="line">Agent, peame sisenema peaserverisse, et andmed kätte saada.</div>
+        <div class="line guide">// Teade: Agent, peame sisenema peaserverisse, et andmed kätte saada.</div>
         <br>
-        <div class="line guide">ÜLESANNE 1: Murra serverisse. Trüki käsk: <b class="cmd-text">hack server</b></div>
+        <div class="line task">ÜLESANNE 1: Murra serverisse.</div>
+        <div class="line guide">Trüki käsk: <b class="cmd-text">hack server</b></div>
     </div>
 
     <div id="input-area">
@@ -114,7 +120,7 @@
     <div id="victory-screen">
         <h1 style="color: gold; font-size: 3rem; margin-bottom: 0;">MISSIOON ÕNNESTUS</h1>
         <p style="color: white; font-size: 1.4rem;">OLED NÜÜD SÜSTEEMI ADMIN.</p>
-        <p style="color: #00ff41;">Kõik andmed on sinu käes. Suurepärane töö!</p>
+        <p style="color: #00ff41;">Kõik andmed on sinu käes. Super häkker!</p>
     </div>
 
     <script>
@@ -147,7 +153,6 @@
         }
 
         function handleCommand(cmd) {
-            // STEP 1: HACK SERVER
             if (step === "start") {
                 if (cmd === "hack server") {
                     startWordSearch();
@@ -155,50 +160,49 @@
                     addLog("Viga! Serverisse sisenemiseks trüki: hack server", "error");
                 }
             }
-            // STEP 2: BINARY LOGIC
             else if (step === "binary") {
                 if (cmd === "off" || cmd === "väljas") {
-                    addLog("KONTROLL... [OK]", "system");
-                    addLog("Ühendan koodijupid...");
+                    addLog("", "system");
+                    addLog("", "guide");
                     step = "strings";
-                    addLog("<br>ÜLESANNE 3: Ühenda kaks koodi osa üheks parooliks.", "system");
+                    addLog("<br><span class='system'>Kirjeldus: Stringide liitmine on programmeerimise alustala.</span>", "");
+                    addLog("ÜLESANNE 3: Ühenda kaks koodi osa üheks parooliks.", "task");
                     addLog("<div class='code-box'>osa1 = \"SUPER\"<br>osa2 = \"HÄKKER\"<br>parool = osa1 + osa2</div>", "");
-                    addLog("Mis on parooli tulemus? (Kirjuta sõnad kokku)", "guide");
+                    addLog("", "guide");
                 } else {
                     addLog("VALE VASTUS! Vihje: Kui 1 tähendab SEES, siis mida tähendab 0?", "error");
                 }
             }
-            // STEP 3: STRING CONCATENATION
             else if (step === "strings") {
                 if (cmd === "superhäkker" || cmd === "superhakker") {
-                    addLog("PAROOLI ÜHENDAMINE... [ÕNNESTUS]", "system");
-                    addLog("Sisenen süsteemi südamikku...");
+                    addLog("", "system");
+                    addLog("", "guide");
                     promptText.innerText = "ADMIN@SERVER_CORE:~$";
                     step = "fibonacci";
-                    addLog("<br>ÜLESANNE 4: Leia järgmine koodinumber:", "system");
-                    addLog("<b style='color:white; font-size:1.5rem;'>1, 1, 2, 3, 5, 8, 13, ...</b>", "system");
-                    addLog("Mis on järgmine number? (Vihje: liida kaks viimast kokku)", "guide");
+                    addLog("<br><span class='system'>Kirjeldus: Matemaatiline muster looduses ja koodis.</span>", "");
+                    addLog("ÜLESANNE 4: Leia järgmine koodinumber:", "task");
+                    addLog("<b style='color:white; font-size:1.5rem;'>1, 1, 2, 3, 5, 8, 13, ...</b>", "");
+                    addLog("", "guide");
                 } else {
                     addLog("VALE VASTUS! Pane need kaks sõna ilma tühikuta kokku.", "error");
                 }
             }
-            // STEP 4: FIBONACCI
             else if (step === "fibonacci") {
                 if (cmd === "21") {
                     addLog("LOGIIKA KONTROLL... [LÄBITUD]", "system");
                     step = "variables";
-                    addLog("<br>ÜLESANNE 5: Viimane turvakiht. Arvuta kood:", "system");
+                    addLog("<br><span class='system'>Kirjeldus: Muutujad (X ja Y) hoiavad väärtusi, millega saab arvutada.</span>", "");
+                    addLog("ÜLESANNE 5: Viimane turvakiht. Arvuta kood:", "task");
                     addLog("<div class='code-box'>X = 100<br>Y = 40<br>VASTUS = X - Y</div>", "");
-                    addLog("Mis on VASTUS?", "guide");
+                    addLog("", "guide");
                 } else {
                     addLog("VALE ARVUTUS! Vihje: 8 + 13 = ?", "error");
                 }
             }
-            // STEP 5: FINAL MATH
             else if (step === "variables") {
                 if (cmd === "60") {
                     addLog("TURVAKOOD ÕIGE!", "system");
-                    addLog("Kõik tõkked on maas. Alustan lõplikku andmete hõivamist...");
+                    addLog("Kõik tõkked on maas. Alustan lõplikku andmete hõivamist...", "guide");
                     setTimeout(startLongHackEffect, 1000);
                 } else {
                     addLog("VALE VASTUS! Arvuta: 100 miinus 40.", "error");
@@ -206,7 +210,6 @@
             }
         }
 
-        // ÜLESANNE 1: Sõnarägastik (LANIMRET)
         function startWordSearch() {
             grid.style.display = 'grid';
             grid.innerHTML = '';
@@ -218,8 +221,6 @@
             for (let i = 0; i < 60; i++) {
                 const s = document.createElement('div');
                 s.className = 'letter';
-
-                // Paneme sõna täpselt keskele (3. rida, indeks 21)
                 if (i >= 21 && i < 21 + word.length) {
                     s.innerText = word[i-21];
                     s.onclick = function() {
@@ -229,10 +230,11 @@
                             if (found === word.length) {
                                 grid.style.display = 'none';
                                 step = "binary";
-                                addLog("MUUKIMINE ÕNNESTUS!", "system");
-                                addLog("<br>ÜLESANNE 2: Binaarne loogika (1 ja 0).", "system");
+                                addLog("", "system");
+                                addLog("<br><span class='system'>Kirjeldus: Arvutid räägivad ainult kahendsüsteemis (1 ja 0).</span>", "");
+                                addLog("ÜLESANNE 2: Binaarne loogika.", "task");
                                 addLog("<div class='code-box'>KUI LÜLITI == 1 SIIS VALGUS = \"SEES\"<br>KUI LÜLITI == 0 SIIS VALGUS = ???</div>", "");
-                                addLog("Kui number on 0, siis kas tuli on SEES või VÄLJAS?", "guide");
+                                addLog("", "guide");
                             }
                         }
                     };
@@ -241,25 +243,20 @@
                 }
                 grid.appendChild(s);
             }
-            addLog("Otsi rägastikust kood <b style='color:yellow'>TERMINL</b> ja kliki tähtedele!", "guide");
+            addLog("// Juhis: Otsi rägastikust sõna 'TERMINAL' ja kliki tähtedele!", "guide");
         }
 
-        // FINAAL: Ülipikk häkkimise efekt
         function startLongHackEffect() {
             userInput.disabled = true;
             let lines = 0;
-            const maxLines = 650;
+            const maxLines = 150;
 
             const hackLoop = setInterval(() => {
                 const symbols = "ABCDEF0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
                 let codePart = "";
                 for(let i=0; i<60; i++) codePart += symbols[Math.floor(Math.random()*symbols.length)];
 
-                const texts = [
-                    "DOWNLOADING_DATABASE...", "BYPASSING_FIREWALL...", "DECRYPTING_ADMIN_HASH...",
-                    "CLEANING_LOG_FILES...", "UPLOADING_BACKDOOR...", "ACCESSING_MAINFRAME...",
-                    "ESTABLISHING_VPN...", "STEALING_ENCRYPTION_KEYS...", "CONNECTED_TO_ROOT..."
-                ];
+                const texts = ["DOWNLOADING...", "BYPASSING...", "DECRYPTING...", "CONNECTED..."];
                 const text = texts[Math.floor(Math.random()*texts.length)];
 
                 addLog(`[0x${codePart.substring(0,10)}] ${text} -- OK`, "matrix-code");
@@ -270,7 +267,7 @@
                     clearInterval(hackLoop);
                     victory.style.display = 'block';
                 }
-            }, 8);
+            }, 20);
         }
     </script>
 </body>
