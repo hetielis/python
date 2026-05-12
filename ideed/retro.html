@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Küber-Pusle: Võrgu Simulaator</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-color: #f8fafc;
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --line-color: #475569;
+        }
+
+        body {
+            margin: 0; padding: 0; background-color: var(--bg-color); color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden;
+        }
+
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            width: 95%; max-width: 1400px; padding: 10px 20px; margin-top: 10px;
+            background: var(--panel-bg); border-radius: 10px; border: 2px solid var(--line-color);
+        }
+
+        .header-titles h1 { margin: 0; color: var(--primary); font-size: 24px; }
+        .header-titles p { margin: 5px 0 0 0; font-size: 14px; color: #94a3b8; }
+
+        #timer-display {
+            font-size: 32px; font-weight: bold; font-family: monospace;
+            background: #000; padding: 10px 20px; border-radius: 8px; color: var(--warning);
+            border: 2px solid var(--warning); box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+        }
+
+        #game-container {
+            display: flex; width: 95%; max-width: 1400px; height: calc(100vh - 120px);
+            gap: 15px; margin-top: 15px;
+        }
+
+        /* Vasak paneel - Kaart */
+        #map-area {
+            flex: 2; background-color: #0b0f19; border: 2px solid var(--line-color);
+            border-radius: 10px; position: relative; overflow: hidden;
+        }
+
+        /* Parem paneel - Kontroll */
+        #side-panel { flex: 1; display: flex; flex-direction: column; gap: 15px; }
+        .panel-box { background-color: var(--panel-bg); border: 2px solid var(--line-color); border-radius: 10px; padding: 15px; display: flex; flex-direction: column; }
+
+        /* Kaardi Elemendid */
+        .node {
+            position: absolute; width: 45px; height: 45px; background-color: #334155;
+            border: 3px solid #64748b; border-radius: 50%; transform: translate(-50%, -50%);
+            cursor: pointer; z-index: 10; display: flex; justify-content: center; align-items: center;
+            font-weight: bold; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .node.start, .node.end { border-color: var(--success); width: 60px; height: 60px; background-color: #064e3b; }
+        .node:hover { border-color: var(--primary); transform: translate(-50%, -50%) scale(1.1); }
+        .node.selected { border-color: var(--primary); box-shadow: 0 0 15px var(--primary); }
+
+        #cables { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        line { stroke: var(--line-color); stroke-width: 6; stroke-linecap: round; transition: 0.3s; }
+        .ping-label { font-size: 14px; fill: #cbd5e1; font-weight: bold; filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.8)); }
+
+        line.route-1 { stroke: #ef4444; } line.route-2 { stroke: #f59e0b; }
+        line.route-3 { stroke: #3b82f6; } line.route-4 { stroke: #10b981; }
+        line.congested { stroke: var(--danger); stroke-width: 10; stroke-dasharray: 10,10; animation: flow 0.5s linear infinite; }
+
+        /* Pakettide valik ja Metaphoor */
+        h3 { margin-top: 0; font-size: 18px; border-bottom: 2px solid var(--line-color); padding-bottom: 8px; }
+
+        .image-explanation {
+            display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.3);
+            padding: 10px; border-radius: 8px; margin-bottom: 15px;
+        }
+
+        .original-image { font-size: 40px; }
+
+        .packet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+
+        .packet-btn {
+            background: #334155; color: white; border: 2px solid var(--line-color);
+            padding: 10px; border-radius: 8px; cursor: pointer; font-size: 14px; text-align: left;
+            display: flex; flex-direction: column; gap: 5px; transition: 0.2s;
+        }
+        .packet-btn:hover { background: #475569; }
+        .packet-btn.active { border-color: var(--primary); background: rgba(59,130,246,0.2); }
+        .packet-btn.routed { border-color: var(--success); background: rgba(16,185,129,0.1); }
+
+        .piece-icon { font-size: 24px; text-align: center; background: rgba(0,0,0,0.2); border-radius: 5px; padding: 5px; }
+
+        button.action-btn {
+            background-color: var(--primary); color: white; border: none; padding: 15px;
+            font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer;
+            box-shadow: 0 4px 0 #2563eb; transition: 0.1s;
+        }
+        button.action-btn:hover { background-color: #2563eb; }
+        button.action-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #2563eb; }
+        button.action-btn:disabled { background-color: #475569; box-shadow: 0 4px 0 #334155; cursor: not-allowed; }
+
+        button.reset-btn {
+            background-color: transparent; color: var(--text-color); border: 2px solid var(--line-color);
+            padding: 10px; margin-top: 10px; border-radius: 8px; cursor: pointer; font-weight: bold;
+        }
+        button.reset-btn:hover { background: rgba(255,255,255,0.1); }
+
+        /* Animatsioonid */
+        .data-packet {
+            position: absolute; width: 30px; height: 30px; font-size: 20px;
+            display: flex; justify-content: center; align-items: center;
+            z-index: 20; transform: translate(-50%, -50%); display: none; transition: all linear;
+            background: white; border-radius: 5px; border: 2px solid black; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        #server-storage {
+            position: absolute; right: 20px; top: 20px; width: 140px;
+            background: rgba(15, 23, 42, 0.9); border: 2px solid var(--success); padding: 15px;
+            border-radius: 10px; z-index: 5; display: flex; flex-direction: column; align-items: center;
+        }
+        .reconstruction-grid {
+            display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 0;
+            width: 100px; height: 100px; border: 2px dashed #475569; background: #000;
+        }
+        .res-part {
+            display: flex; align-items: center; justify-content: center;
+            font-size: 35px; opacity: 0; transition: 0.5s; overflow: hidden;
+        }
+
+        /* Logi */
+        #terminal { flex-grow: 1; background: #020617; border: 2px solid var(--line-color); padding: 10px; overflow-y: auto; font-family: monospace; font-size: 13px; border-radius: 8px; }
+        .log-info { color: #94a3b8; } .log-warn { color: var(--warning); } .log-err { color: var(--danger); } .log-success { color: var(--success); }
+
+        @keyframes flow { to { stroke-dashoffset: -20; } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-titles">
+            <h1>🚀 Küber-Pusle Simulaator</h1>
+            <p>Tükelda pilt, väldi ruuterite ummikuid ja püüa leida kõige kiirem marsruut!</p>
+        </div>
+        <div id="timer-display">0.00s</div>
+    </header>
+
+    <div id="game-container">
+        <div id="map-area">
+            <svg id="cables"></svg>
+
+            <div id="server-storage">
+                <div style="font-size: 12px; color: var(--success); margin-bottom: 10px; text-align: center; font-weight: bold;">SIHTKOHT (Sõber)</div>
+                <div class="reconstruction-grid">
+                    <div class="res-part" id="res1">👾</div> <div class="res-part" id="res2">✨</div> <div class="res-part" id="res3">🛸</div> <div class="res-part" id="res4">🌍</div> </div>
+            </div>
+
+            <div class="data-packet" id="packet-anim-1">👾</div>
+            <div class="data-packet" id="packet-anim-2">✨</div>
+            <div class="data-packet" id="packet-anim-3">🛸</div>
+            <div class="data-packet" id="packet-anim-4">🌍</div>
+        </div>
+
+        <div id="side-panel">
+            <div class="panel-box">
+                <h3>1. Mis on paketid?</h3>
+                <div class="image-explanation">
+                    <div class="original-image">🖼️</div>
+                    <div style="font-size: 12px; color: #cbd5e1;">
+                        Internet on nagu toru, kuhu suur pilt korraga ära ei mahu. Sinu saadetav pilt lõigati 4 väikeseks "paketiks" (pusletükiks). Sinu ülesanne on need kiiresti kohale toimetada!
+                    </div>
+                </div>
+
+                <h3>2. Joonista teekond (Väldi ummikuid!)</h3>
+                <div class="packet-grid">
+                    <button class="packet-btn" onclick="selectPacket(1)" id="btn-p1">
+                        Pakett 1 (Vasak ülanurk)
+                        <div class="piece-icon">👾</div>
+                    </button>
+                    <button class="packet-btn" onclick="selectPacket(2)" id="btn-p2">
+                        Pakett 2 (Parem ülanurk)
+                        <div class="piece-icon">✨</div>
+                    </button>
+                    <button class="packet-btn" onclick="selectPacket(3)" id="btn-p3">
+                        Pakett 3 (Vasak alanurk)
+                        <div class="piece-icon">🛸</div>
+                    </button>
+                    <button class="packet-btn" onclick="selectPacket(4)" id="btn-p4">
+                        Pakett 4 (Parem alanurk)
+                        <div class="piece-icon">🌍</div>
+                    </button>
+                </div>
+                <button class="action-btn" id="send-btn" onclick="sendData()" disabled>SAADA ANDMED! ⏱️</button>
+                <button class="reset-btn" onclick="location.reload()">🔄 Loo täiesti uus kaart (Uus mäng)</button>
+            </div>
+
+            <div class="panel-box" style="flex-grow: 1;">
+                <h3>Võrgu Logi</h3>
+                <div id="terminal">
+                    <div class="log-info">> Süsteem käivitatud. Ootan navigeerimisjuhiseid...</div>
+                    <div class="log-warn">> Vihje: Mida väiksem on ms (millisekund) arv kaablil, seda kiirem see on!</div>
+                    <div class="log-danger">> Hoiatus: Ära saada kõiki 4 paketti mööda ühte kaablit, tekib suur ummik!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const nodesData = {
+            'A': { x: 10, y: 50, type: 'start', label: 'Kodu' },
+            'R1': { x: 35, y: 15, type: 'normal', label: 'Ruuter 1' },
+            'R2': { x: 35, y: 50, type: 'normal', label: 'Ruuter 2' },
+            'R3': { x: 35, y: 85, type: 'normal', label: 'Ruuter 3' },
+            'R4': { x: 65, y: 15, type: 'normal', label: 'Ruuter 4' },
+            'R5': { x: 65, y: 50, type: 'normal', label: 'Ruuter 5' },
+            'R6': { x: 65, y: 85, type: 'normal', label: 'Ruuter 6' },
+            'B': { x: 88, y: 50, type: 'end', label: 'Sõber' }
+        };
+
+        let connections = [];
+        let routes = { 1: [], 2: [], 3: [], 4: [] };
+        let selectedPacket = null;
+
+        // Stopperi muutujad
+        let timerInterval;
+        let startTime;
+        let timerRunning = false;
+
+        function logMsg(msg, type = 'log-info') {
+            const term = document.getElementById('terminal');
+            term.innerHTML += `<div class="${type}">${msg}</div>`;
+            term.scrollTop = term.scrollHeight;
+        }
+
+        // Genereerib igal laadimisel juhusliku ja läbitava kaardi
+        function generateRandomMap() {
+            connections = [];
+            const randomPing = () => Math.floor(Math.random() * 6 + 1) * 10; // 10, 20, 30, 40, 50, 60 ms
+
+            // Kindlustame baasteed, et mäng ei oleks kunagi "katki"
+            const baseConns = [
+                ['A', 'R1'], ['A', 'R2'], ['A', 'R3'],
+                ['R1', 'R4'], ['R2', 'R5'], ['R3', 'R6'],
+                ['R4', 'B'], ['R5', 'B'], ['R6', 'B']
+            ];
+
+            // Ristuvad teed (lisatakse juhuslikult 50% tõenäosusega)
+            const crossConns = [
+                ['R1', 'R2'], ['R2', 'R3'], ['R4', 'R5'], ['R5', 'R6'],
+                ['R1', 'R5'], ['R2', 'R4'], ['R2', 'R6'], ['R3', 'R5']
+            ];
+
+            baseConns.forEach(c => {
+                connections.push({ from: c[0], to: c[1], ping: randomPing() });
+            });
+
+            crossConns.forEach(c => {
+                if(Math.random() > 0.4) {
+                    connections.push({ from: c[0], to: c[1], ping: randomPing() });
+                }
+            });
+        }
+
+        function initMap() {
+            generateRandomMap();
+            const mapArea = document.getElementById('map-area');
+            const svg = document.getElementById('cables');
+
+            connections.forEach(conn => {
+                const n1 = nodesData[conn.from];
+                const n2 = nodesData[conn.to];
+
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', `${n1.x}%`); line.setAttribute('y1', `${n1.y}%`);
+                line.setAttribute('x2', `${n2.x}%`); line.setAttribute('y2', `${n2.y}%`);
+                line.id = `line-${conn.from}-${conn.to}`;
+                svg.appendChild(line);
+
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', `${(n1.x + n2.x)/2}%`);
+                text.setAttribute('y', `${(n1.y + n2.y)/2 - 5}%`);
+                text.setAttribute('class', 'ping-label');
+                text.setAttribute('text-anchor', 'middle');
+                // Kui ping on madal, teeme roheliseks, kui kõrge, siis punaseks
+                if(conn.ping <= 20) text.style.fill = 'var(--success)';
+                if(conn.ping >= 50) text.style.fill = 'var(--warning)';
+                text.textContent = `${conn.ping}ms`;
+                svg.appendChild(text);
+            });
+
+            for (const [id, node] of Object.entries(nodesData)) {
+                const div = document.createElement('div');
+                div.className = `node ${node.type}`;
+                div.id = `node-${id}`;
+                div.style.left = `${node.x}%`; div.style.top = `${node.y}%`;
+                div.innerText = id === 'A' ? 'A' : (id === 'B' ? 'B' : id);
+                div.onclick = () => handleNodeClick(id);
+                mapArea.appendChild(div);
+            }
+        }
+
+        function selectPacket(id) {
+            selectedPacket = id;
+            document.querySelectorAll('.packet-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-p${id}`).classList.add('active');
+            routes[id] = ['A'];
+            updateVisuals();
+        }
+
+        function handleNodeClick(nodeId) {
+            if (!selectedPacket) return alert("Vali paremalt nimekirjast üks pakett (pusletükk)!");
+            const currentRoute = routes[selectedPacket];
+            const lastNode = currentRoute[currentRoute.length - 1];
+
+            if (nodeId === 'A') return;
+
+            const isConnected = connections.some(c =>
+                (c.from === lastNode && c.to === nodeId) || (c.to === lastNode && c.from === nodeId)
+            );
+
+            if (isConnected && !currentRoute.includes(nodeId)) {
+                currentRoute.push(nodeId);
+                updateVisuals();
+
+                if (nodeId === 'B') {
+                    document.getElementById(`btn-p${selectedPacket}`).classList.add('routed');
+                    selectedPacket = null;
+                    checkAllReady();
+                }
+            } else if (!isConnected) {
+                logMsg(`[Viga] See ruuter ei ole eelmisega otse ühendatud!`, "log-err");
+            }
+        }
+
+        function updateVisuals() {
+            document.querySelectorAll('line').forEach(l => l.className.baseVal = '');
+            document.querySelectorAll('.node').forEach(n => n.classList.remove('selected'));
+
+            for (let pkt = 1; pkt <= 4; pkt++) {
+                const route = routes[pkt];
+                for (let i = 0; i < route.length - 1; i++) {
+                    const from = route[i]; const to = route[i+1];
+                    const lineId1 = `line-${from}-${to}`; const lineId2 = `line-${to}-${from}`;
+                    const lineEl = document.getElementById(lineId1) || document.getElementById(lineId2);
+
+                    if (lineEl) {
+                        if (lineEl.className.baseVal !== '') lineEl.className.baseVal = 'congested';
+                        else lineEl.className.baseVal = `route-${pkt}`;
+                    }
+                }
+            }
+
+            if(selectedPacket) {
+                const route = routes[selectedPacket];
+                const lastNode = route[route.length - 1];
+                document.getElementById(`node-${lastNode}`).classList.add('selected');
+            }
+        }
+
+        function checkAllReady() {
+            const isReady = [1,2,3,4].every(i => routes[i].length > 0 && routes[i][routes[i].length-1] === 'B');
+            if (isReady) {
+                document.getElementById('send-btn').disabled = false;
+                logMsg("> Kõik paketid on valmis. Käivita stopper ja saada andmed!", "log-success");
+            }
+        }
+
+        function updateTimer() {
+            if(!timerRunning) return;
+            const now = Date.now();
+            const diff = (now - startTime) / 1000;
+            document.getElementById('timer-display').innerText = diff.toFixed(2) + "s";
+            requestAnimationFrame(updateTimer);
+        }
+
+        function sendData() {
+            document.getElementById('send-btn').disabled = true;
+            document.querySelectorAll('.packet-btn').forEach(btn => btn.disabled = true);
+
+            // Käivita stopper
+            startTime = Date.now();
+            timerRunning = true;
+            requestAnimationFrame(updateTimer);
+
+            logMsg("=== ANDMEEDASTUS ALGAS ===", "log-warn");
+
+            // Arvuta ummikud (mitu paketti kasutab sama juhet)
+            let linkUsage = {};
+            for (let pkt = 1; pkt <= 4; pkt++) {
+                const r = routes[pkt];
+                for (let i = 0; i < r.length - 1; i++) {
+                    const linkName = [r[i], r[i+1]].sort().join('-');
+                    linkUsage[linkName] = (linkUsage[linkName] || 0) + 1;
+                }
+            }
+
+            for (let pkt = 1; pkt <= 4; pkt++) {
+                startPacketAnimation(pkt, routes[pkt], linkUsage);
+            }
+        }
+
+        function getPing(nodeA, nodeB) {
+            const conn = connections.find(c => (c.from === nodeA && c.to === nodeB) || (c.to === nodeA && c.from === nodeB));
+            return conn ? conn.ping : 50;
+        }
+
+        function startPacketAnimation(packetId, route, linkUsage) {
+            const el = document.getElementById(`packet-anim-${packetId}`);
+            el.style.display = 'flex';
+            let step = 0;
+
+            function moveToNext() {
+                if (step >= route.length) {
+                    el.style.display = 'none';
+                    receivePacket(packetId);
+                    return;
+                }
+
+                const currentNodeId = route[step];
+                const node = nodesData[currentNodeId];
+
+                let travelTime = 0; // Animatsiooni aeg millisekundites
+                if (step > 0) {
+                    const prevNodeId = route[step-1];
+                    const linkName = [prevNodeId, currentNodeId].sort().join('-');
+                    const basePing = getPing(prevNodeId, currentNodeId);
+                    const usage = linkUsage[linkName];
+
+                    // 10ms ping võrdub visuaalselt umbes 0.2 sekundiga.
+                    // Ummiku korral aeg mitmekordistub massiivselt!
+                    travelTime = basePing * 20;
+                    if (usage > 1) {
+                        travelTime = travelTime * usage * 1.5; // Ummiku karistus
+                        if (step === 1) logMsg(`[UMMIK] Pakett ${packetId} takerdus liinil! Andmed liiguvad palju aeglasemalt.`, "log-err");
+                    }
+
+                    el.style.transitionDuration = `${travelTime}ms`;
+                }
+
+                el.style.left = `${node.x}%`;
+                el.style.top = `${node.y}%`;
+
+                step++;
+                // Kui on esimene samm (punkt A), liigu kohe edasi. Muidu oota animatsiooni lõppu.
+                setTimeout(moveToNext, travelTime === 0 ? 50 : travelTime);
+            }
+            moveToNext();
+        }
+
+        let packetsArrived = 0;
+        function receivePacket(id) {
+            packetsArrived++;
+            document.getElementById(`res${id}`).style.opacity = '1';
+            logMsg(`> Pakett ${id} (Pusletükk) jõudis kohale!`, "log-info");
+
+            if (packetsArrived === 4) {
+                timerRunning = false; // Peata stopper
+                const finalTime = document.getElementById('timer-display').innerText;
+
+                document.getElementById('server-storage').style.background = 'rgba(16, 185, 129, 0.5)';
+                logMsg(`=== PILT KOKKU PANDUD! ===`, "log-success");
+                logMsg(`Sinu lõppaeg: ${finalTime}`, "log-warn");
+
+                setTimeout(() => {
+                    alert(`Hurraa! Terve pilt pandi sihtkohas uuesti kokku! \nSinu läbimisaeg: ${finalTime} \nKas suudad seda aega parandada või tekitasid kuskil ummiku?`);
+                }, 500);
+            }
+        }
+
+        window.onload = initMap;
+    </script>
+</body>
+</html>
